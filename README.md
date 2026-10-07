@@ -1,94 +1,17 @@
-# Hi, I'm Dave Gudge
+<p align="center">
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/header-mobile.svg"><img src="./assets/profile/header.svg" width="100%" align="top" alt="Dave Gudge. Ruby on Rails, Hotwire Native, infrastructure and aviation."></picture>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/stats-mobile.svg"><img src="./assets/profile/stats.svg" width="100%" align="top" alt="GitHub snapshot: contributions in the last 12 months, pull requests, merged pull requests, current and longest streaks, and primary languages across owned private and public non-fork repositories."></picture>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/contributions-mobile.svg"><img src="./assets/profile/contributions.svg" width="100%" align="top" alt="Archived monthly GitHub contributions from 2007 to 2026, grouped into decades, with yearly totals and highlights for 2026 so far, the busiest month and the top year. The three busiest months have gently pulsing lime outlines; the current month has an orange outline. Includes private contribution counts; 2026 is partial and the observation date is shown."></picture>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/smon-mobile.svg"><img src="./assets/profile/smon.svg" width="100%" align="top" alt="SMON operational snapshot: service health, projects, recent deployments, monitoring checks and cumulative successful deployments since 2016."></picture>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/adsb-mobile.svg"><img src="./assets/profile/adsb.svg" width="100%" align="top" alt="Home ADS-B receiver snapshot: distinct aircraft heard during the 60 seconds before the shown observation time; how many of those had a position in that same minute; and radio messages received in the 15 minutes before the snapshot, which are not flight counts. These are saved snapshots, not live readings. Feeder statistics links follow."></picture>
+<a href="https://www.flightaware.com/adsb/stats/user/davegudge"><picture><source media="(max-width: 768px)" srcset="./assets/profile/adsb-link-1-mobile.svg"><img src="./assets/profile/adsb-link-1.svg" width="33.333%" align="top" alt="FlightAware feeder statistics"></picture></a><a href="https://www.flightradar24.com/account/feed-stats/?id=9002"><picture><source media="(max-width: 768px)" srcset="./assets/profile/adsb-link-2-mobile.svg"><img src="./assets/profile/adsb-link-2.svg" width="33.333%" align="top" alt="Flightradar24 feeder statistics"></picture></a><a href="https://www.adsbexchange.com/api/feeders/?feed=3w4e_osF80-0"><picture><source media="(max-width: 768px)" srcset="./assets/profile/adsb-link-3-mobile.svg"><img src="./assets/profile/adsb-link-3.svg" width="33.333%" align="top" alt="ADS-B Exchange feeder statistics"></picture></a>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/projects-mobile.svg"><img src="./assets/profile/projects.svg" width="100%" align="top" alt="Selected systems"></picture>
+<a href="https://smon.gudge.uk"><picture><source media="(max-width: 768px)" srcset="./assets/profile/project-1-mobile.svg"><img src="./assets/profile/project-1.svg" width="100%" align="top" alt="SMON — infrastructure health, releases and deployment coordination"></picture></a>
+<a href="https://lessons.gudgenet.uk"><picture><source media="(max-width: 768px)" srcset="./assets/profile/project-2-mobile.svg"><img src="./assets/profile/project-2.svg" width="100%" align="top" alt="Lesson Loop — learning and practice platform"></picture></a>
+<a href="https://gps-map.gudge.uk"><picture><source media="(max-width: 768px)" srcset="./assets/profile/project-3-mobile.svg"><img src="./assets/profile/project-3.svg" width="100%" align="top" alt="GPS Map — location-aware mapping for remote terrain"></picture></a>
+<a href="https://hollykathleen.com"><picture><source media="(max-width: 768px)" srcset="./assets/profile/project-4-mobile.svg"><img src="./assets/profile/project-4.svg" width="100%" align="top" alt="Holly Kathleen — long-lived business workflow platform"></picture></a>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/stack-mobile.svg"><img src="./assets/profile/stack.svg" width="100%" align="top" alt="Technology stack: Ruby, Rails, Hotwire, Turbo, Stimulus, Hotwire Native, Swift, Kotlin, PostgreSQL, PostGIS, Redis, Linux, Docker, Kamal and GitHub Actions."></picture>
+<picture><source media="(max-width: 768px)" srcset="./assets/profile/footer-mobile.svg"><img src="./assets/profile/footer.svg" width="100%" align="top" alt="End of transmission. Design credit to Giorgi Kobaidze."></picture>
+</p>
 
-**Principal Engineer · Hands-on Engineering Leader · Ruby on Rails**
-
-I design, build and modernise long-lived software systems across healthcare, recruitment, workforce management and small-business platforms.
-
-My work spans application architecture, hands-on Rails development, mobile applications, platform engineering, deployment, operational tooling and day-to-day technical leadership.
-
-- More than 20 years in software delivery
-- Building with Ruby on Rails since 2012
-- Led and mentored development teams of up to nine engineers
-- Experienced across contingent-workforce SaaS, mobile applications and NHS delivery
-- Based in Whitstable, Kent, UK
-
-## What I do
-
-I enjoy understanding how organisations operate, identifying friction in day-to-day workflows and building practical software that removes it.
-
-That often means working across established boundaries: shaping architecture, researching new approaches, creating proofs of concept, translating stakeholder requirements, improving delivery processes and remaining hands-on through implementation and deployment.
-
-My strongest areas include:
-
-- Ruby on Rails architecture and long-term platform modernisation
-- Engineering leadership, mentoring, code review and delivery planning
-- Workflow automation and business-process software
-- Hotwire and Hotwire Native applications
-- iOS and Android development with Swift and Kotlin
-- PostgreSQL, Redis, REST APIs and third-party integrations
-- Docker, Kamal, GitHub Actions, Linux and CI/CD
-- Monitoring, release visibility and operational tooling
-
-## Selected work
-
-### [Lesson Loop](https://lessons.gudgenet.uk)
-
-A multi-tenant Rails 8 platform for structured learning, practice tracking and student engagement.
-
-It began as an adaptive Grade 5 Music Theory revision tool and has evolved into a broader platform for teachers, students, guardians and organisations, supporting lesson notes, practice tasks, progress tracking, repertoire, quizzes, points, streaks and rewards.
-
-`Ruby` `Rails 8` `PostgreSQL` `Hotwire` `Turbo` `Stimulus` `PWA` `Docker` `Kamal`
-
-### [SMON](https://smon.gudge.uk)
-
-A Rails platform for infrastructure monitoring, deployment coordination and release visibility across application and infrastructure environments.
-
-It brings together application health, environments, undeployed changes, deployment requests, changelog generation and incident awareness, with integrations including GitHub, Jira, Honeybadger and Slack.
-
-`Ruby` `Rails 8` `PostgreSQL` `Redis` `Hotwire` `Docker` `Kamal` `API integrations`
-
-### [Holly Kathleen](https://hollykathleen.com)
-
-A mature business-operations platform supporting the customer journey for a bridal hair and makeup business.
-
-The system covers enquiries, inbound email, quotations, bookings, communication, scheduling, invoicing and payment tracking, replacing fragmented email threads, spreadsheets and manual reminders with a single workflow.
-
-`Ruby` `Rails 8` `PostgreSQL` `Mailgun` `Action Mailbox` `Hotwire` `Docker` `Kamal`
-
-### [GPS Map](https://gps-map.gudge.uk)
-
-A location-aware mapping platform for ski resorts and remote environments, where terrain, lifts, pistes and accessible routes matter more than simple distance.
-
-Originally released as a native iOS application, it later evolved into a Progressive Web App with custom map layers, route overlays and battery-conscious location tracking.
-
-`Ruby` `Rails 8` `PostgreSQL` `PostGIS` `Leaflet` `MapTiler` `Swift` `PWA`
-
-## Healthcare workforce engineering
-
-I have spent much of my career working on software for healthcare recruitment and contingent-workforce management.
-
-This has included vacancy fulfilment, workflow automation, reporting, invoicing, REST APIs, NHS deployments and mobile applications enabling bank workers to view and self-allocate shifts, manage working preferences and submit timesheets and expenses.
-
-I originally built the iOS and Android applications using Turbolinks Native and later rebuilt them with Hotwire Native, coordinating the web-platform and app-store releases to provide a seamless transition for users.
-
-## How I work
-
-- I take ownership of complex or under-defined problems and drive them through to production.
-- I remain hands-on while providing architectural direction and clear delivery paths for other engineers.
-- I favour pragmatic solutions that improve reliability, visibility and maintainability.
-- I research new concepts thoroughly and use proofs of concept to reduce risk before wider adoption.
-- I care about the people using the software and the engineers responsible for maintaining it.
-
-## Current interests
-
-`Ruby on Rails` · `Hotwire` · `Hotwire Native` · `Platform Engineering` · `Workflow Automation` · `Operational Tooling` · `Mobile Development` · `Software Architecture`
-
-## Public GitHub
-
-Most of my production applications are held in private repositories. My public GitHub contains selected experiments, supporting tools, integrations and forks used while researching or contributing to the Ruby, Rails and Hotwire ecosystems.
-
-## Connect
-
-- [LinkedIn](https://www.linkedin.com/in/david-gudge-0b074852/)
-
-I am open to conversations about Principal Engineer, Staff Engineer and hands-on engineering-leadership roles.
+<p align="center"><sub>Work history: <a href="https://www.linkedin.com/in/david-gudge-0b074852/">LinkedIn</a> · Console design inspired by <a href="https://github.com/georgekobaidze/georgekobaidze">Giorgi Kobaidze</a> (<a href="https://dev.to/georgekobaidze/i-turned-my-github-profile-into-a-cyberpunk-console-with-a-city-built-from-my-contributions-h4c">design notes</a>). Responsive SVG approach and vivid accent palette informed by <a href="https://github.com/jdx/jdx">jdx</a>. Operational snapshots refresh on a schedule; GitHub activity is a dated archive.</sub></p>

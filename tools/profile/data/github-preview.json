@@ -1,0 +1,24 @@
+{
+  "data": {
+    "user": {
+      "contributionsCollection": {
+        "contributionCalendar": {
+          "totalContributions": 4813
+        }
+      },
+      "mergedPullRequests": {
+        "totalCount": 4775
+      },
+      "pullRequests": {
+        "totalCount": 4994
+      },
+      "repositories": {
+        "totalCount": 33
+      }
+    }
+  },
+  "fetched_at": "2026-10-05",
+  "includes_private": true,
+  "schema_version": 1,
+  "source": "authenticated GitHub profile snapshot"
+}

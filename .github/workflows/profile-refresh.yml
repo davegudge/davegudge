@@ -1,0 +1,38 @@
+name: Refresh public profile
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check snapshot handling
+        run: python3 -m unittest discover -s tools/profile -p 'test_*.py'
+      - name: Refresh verified snapshots and images
+        env:
+          SMON_PROFILE_STATS_URL: ${{ vars.SMON_PROFILE_STATS_URL }}
+          ADSB_PROFILE_STATS_URL: ${{ vars.ADSB_PROFILE_STATS_URL }}
+          SMON_PROFILE_STATS_TOKEN: ${{ secrets.SMON_PROFILE_STATS_TOKEN }}
+        run: python3 tools/profile/refresh.py
+      - name: Commit changed snapshots
+        run: |
+          git add assets/profile tools/profile/data
+          if git diff --cached --quiet; then
+            echo 'Snapshots unchanged'
+            exit 0
+          fi
+          git -c user.name='profile-refresh[bot]' -c user.email='profile-refresh[bot]@users.noreply.github.com' commit -m 'Refresh profile snapshots'
+          git push
