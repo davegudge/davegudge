@@ -39,6 +39,12 @@ class RefreshTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "timestamp"):
             validate_adsb(self.adsb | {"observed_at": "2026-10-05T19:40:00Z"}, self.now)
 
+    def test_accepts_complete_30_minute_count(self):
+        complete = self.adsb | {"schema_version": 2, "aircraft_seen_last_30_minutes": 180}
+        validate_adsb(complete, self.now)
+        with self.assertRaisesRegex(ValueError, "30-minute count"):
+            validate_adsb(complete | {"aircraft_seen_last_30_minutes": 41}, self.now)
+
     def test_rejects_inconsistent_smon_counts(self):
         data = {"schema_version": 1, "generated_at": "2026-10-05T19:59:00Z",
                 "instance": "current", "services_healthy": 3, "services_monitored": 2,
