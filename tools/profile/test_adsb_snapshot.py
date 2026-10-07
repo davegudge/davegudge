@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from adsb_snapshot import snapshot
+from adsb_snapshot import rolling_count, snapshot
 
 
 class AdsbSnapshotTest(unittest.TestCase):
@@ -72,6 +72,21 @@ class AdsbSnapshotTest(unittest.TestCase):
             result = snapshot(self.path, now=observed_at + 10, state_file=state)
         self.assertEqual(2, result["schema_version"])
         self.assertEqual(1, result["aircraft_seen_last_30_minutes"])
+
+    def test_rolling_count_deduplicates_and_expires_old_aircraft(self):
+        state = self.path / "window.json"
+        self.assertIsNone(rolling_count({"aircraft": [
+            {"hex": "abc123", "seen": 5, "messages": 3},
+            {"hex": "def456", "seen": 20, "messages": 3},
+        ]}, 1_000, state))
+        for observed_at in (1_240, 1_480, 1_720, 1_960, 2_200, 2_440, 2_680):
+            aircraft = [{"hex": "fed789", "seen": 1, "messages": 3}] if observed_at == 1_720 else []
+            self.assertIsNone(rolling_count({"aircraft": aircraft}, observed_at, state))
+        count = rolling_count({"aircraft": [
+            {"hex": "abc123", "seen": 1, "messages": 3},
+            {"hex": "abc123", "seen": 2, "messages": 3},
+        ]}, 2_800, state)
+        self.assertEqual(2, count)  # abc123 returned, fed789 remains, def456 expired.
 
 
 if __name__ == "__main__":
