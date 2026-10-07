@@ -17,13 +17,18 @@ a stale label once it ages beyond two hours.
 | `ADSB_PROFILE_STATS_URL` repository variable | `https://smon.gudge.uk/api/profile_adsb` |
 | `SMON_PROFILE_STATS_TOKEN` repository secret | Read-only token for both profile endpoints |
 
-The ADS-B receiver sends a separate authenticated aggregate to SMON every five
-minutes. The displayed aircraft and position figures describe the 60 seconds
-before the shown observation time; messages cover the receiver's preceding 15
-minutes. They are not live values when a visitor opens GitHub and are not
-FlightAware, Flightradar24, or ADS-B Exchange totals. The public profile links
-to those services' feeder statistics pages. No aircraft identifiers or
-locations are stored in the profile snapshots.
+The ADS-B receiver sends a separate authenticated aggregate to SMON every
+minute. A mode-600 state file on the receiver holds salted hashes of aircraft
+identifiers for the rolling 30-minute count. Neither those hashes nor aircraft
+locations are sent to SMON or committed here. After a restart or a polling gap
+longer than five minutes, the receiver sends the earlier one-minute schema
+until it has collected a complete window. The 30-minute count is distinct
+aircraft heard with at least two messages during that window. The other cards
+show the 60-second sample, including the position subset, and receiver radio
+messages over the preceding 15 minutes. These are saved receiver observations,
+not live values when a visitor opens GitHub or totals from FlightAware,
+Flightradar24, or ADS-B Exchange. Links to those feeder statistics pages follow
+the aviation card.
 
 SMON's cumulative successful-deployment figure combines a fixed verified
 historical aggregate of 6,963 with the current instance's cumulative total

@@ -383,14 +383,25 @@ def render_adsb(mobile: bool, data: dict | None = None) -> None:
     else:
         body += t(258, 131, "RECEIVER SNAPSHOT", 12, LIME, 700)
     if data:
-        metrics = [
-            (f'{data["aircraft_seen_last_60_seconds"]:,}', "AIRCRAFT HEARD", LIME,
-             "Distinct aircraft heard", "in 60s before snapshot."),
-            (f'{data["aircraft_with_positions_last_60_seconds"]:,}', "RECENT POSITION", CYAN,
-             "Of those, with a position", "in the same 60 seconds."),
-            (f'{data["messages_last_15_minutes"]:,}', "RADIO MESSAGES", PINK,
-             "Broadcasts received in", "15 minutes; not flights."),
-        ]
+        if data.get("schema_version") == 2:
+            metrics = [
+                (f'{data["aircraft_seen_last_30_minutes"]:,}', "AIRCRAFT / 30M", LIME,
+                 "Distinct aircraft heard", "in the past 30 minutes."),
+                (f'{data["aircraft_seen_last_60_seconds"]:,}', "AIRCRAFT / 60S", CYAN,
+                 f'{data["aircraft_with_positions_last_60_seconds"]:,} with a position',
+                 "in this one-minute sample."),
+                (f'{data["messages_last_15_minutes"]:,}', "MESSAGES / 15M", PINK,
+                 "Radio broadcasts received;", "not a count of flights."),
+            ]
+        else:
+            metrics = [
+                (f'{data["aircraft_seen_last_60_seconds"]:,}', "AIRCRAFT HEARD", LIME,
+                 "Distinct aircraft heard", "in 60s before snapshot."),
+                (f'{data["aircraft_with_positions_last_60_seconds"]:,}', "RECENT POSITION", CYAN,
+                 "Of those, with a position", "in the same 60 seconds."),
+                (f'{data["messages_last_15_minutes"]:,}', "RADIO MESSAGES", PINK,
+                 "Broadcasts received in", "15 minutes; not flights."),
+            ]
         for index, (value, label, color, detail_1, detail_2) in enumerate(metrics):
             if mobile:
                 y = 288 + index * 96

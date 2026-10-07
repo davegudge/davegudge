@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 
-from adsb_snapshot import DEFAULT_JSON_DIR, snapshot
+from adsb_snapshot import DEFAULT_JSON_DIR, DEFAULT_STATE_FILE, snapshot
 
 PROFILE_USER_AGENT = "profile-preview/1.0 (+https://github.com/davegudge/profile-preview)"
 
@@ -42,7 +42,7 @@ def main() -> int:
         publish(
             os.environ["SMON_PROFILE_ADSB_URL"],
             os.environ["SMON_PROFILE_ADSB_INGEST_TOKEN"],
-            snapshot(DEFAULT_JSON_DIR),
+            snapshot(DEFAULT_JSON_DIR, state_file=DEFAULT_STATE_FILE),
         )
     except (KeyError, OSError, ValueError, urllib.error.URLError) as error:
         print(f"ADS-B publish failed: {error}", file=sys.stderr)

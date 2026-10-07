@@ -49,13 +49,18 @@ def validate_smon(data: dict, now: datetime) -> None:
 def validate_adsb(data: dict, now: datetime) -> None:
     expected = {"schema_version", "source", "observed_at", "aircraft_seen_last_60_seconds",
                 "aircraft_with_positions_last_60_seconds", "messages_last_15_minutes"}
-    if set(data) != expected or data["schema_version"] != 1 or data["source"] != "dump1090-fa":
+    version = data.get("schema_version")
+    if version == 2:
+        expected.add("aircraft_seen_last_30_minutes")
+    if set(data) != expected or version not in (1, 2) or data["source"] != "dump1090-fa":
         raise ValueError("unexpected ADS-B summary schema")
     timestamp(data["observed_at"], now, timedelta(minutes=15))
     counts = [data[key] for key in expected - {"schema_version", "source", "observed_at"}]
     if not all(nonnegative_int(value) for value in counts) or \
             data["aircraft_with_positions_last_60_seconds"] > data["aircraft_seen_last_60_seconds"]:
         raise ValueError("invalid ADS-B counts")
+    if version == 2 and data["aircraft_seen_last_30_minutes"] < data["aircraft_seen_last_60_seconds"]:
+        raise ValueError("30-minute count is below 60-second count")
 
 
 def fetch_json(url: str, token: str, body: dict | None = None) -> dict:
