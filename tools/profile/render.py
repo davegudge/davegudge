@@ -1,24 +1,30 @@
 #!/usr/bin/env python3
-"""Render the local GitHub profile preview from an explicit data snapshot."""
+"""Render the public GitHub profile from verified aggregate snapshots."""
 
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import textwrap
 from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from gitlab_snapshot import empty_snapshot, validate_snapshot
+from github_snapshot import empty_snapshot as empty_github_snapshot, validate_snapshot as validate_github_snapshot
 
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "profile"
-DATA = ROOT / "tools" / "profile" / "data" / "github-preview.json"
 SMON_DATA = ROOT / "tools" / "profile" / "data" / "smon-latest.json"
 ADSB_DATA = ROOT / "tools" / "profile" / "data" / "adsb-latest.json"
 HISTORY_DATA = ROOT / "tools" / "profile" / "data" / "github-history.json"
 LANGUAGES_DATA = ROOT / "tools" / "profile" / "data" / "github-languages.json"
+GITLAB_DATA = ROOT / "tools" / "profile" / "data" / "gitlab-history.json"
+GITHUB_RECENT_DATA = ROOT / "tools" / "profile" / "data" / "github-recent.json"
 INK = "#edf8ff"
 MUTED = "#a3b5c8"
 CYAN = "#58e8ff"
@@ -154,19 +160,93 @@ def render_header(mobile: bool) -> None:
     save("header", svg(w, h, "Dave Gudge — Rails, infrastructure and aviation", body, top=True), mobile)
 
 
-def render_stats(user: dict, mobile: bool, fetched_at: str | None = None,
-                 history: dict | None = None, languages: dict | None = None) -> None:
-    w, h = ((420, 552) if mobile else (1000, 390)) if languages else \
-           ((420, 357) if mobile else (1000, 246))
-    calendar = user["contributionsCollection"]["contributionCalendar"]
-    values = [(f'{calendar["totalContributions"]:,}', "CONTRIBUTIONS / 12 MO"),
-              (f'{user["pullRequests"]["totalCount"]:,}', "PULL REQUESTS"),
-              (f'{user["mergedPullRequests"]["totalCount"]:,}', "MERGED PRS"),
-              (f'{history["current_streak_days"]}d' if history else
-               str(user["repositories"]["totalCount"]),
-               f'STREAK · {datetime.fromisoformat(history["observed_at"]).strftime("%d %b").upper()}'
-               if history else "PUBLIC REPOSITORIES")]
-    body = heading(w, "GITHUB SIGNAL", "01", mobile)
+def source_months(data: dict | None, metric: str) -> dict[str, int]:
+    if not data:
+        return {}
+    months = {key: counts[metric] for key, counts in data["monthly"].items()}
+    current = data.get("current_month")
+    if current is not None:
+        if current["month"] in months:
+            raise ValueError("current month overlaps its archive")
+        months[current["month"]] = current[metric]
+    return months
+
+
+def merge_activity_history(archive: dict, recent: dict | None, gitlab: dict | None,
+                           now: datetime | None = None) -> dict:
+    now = now or datetime.now(timezone.utc)
+    if archive["schema_version"] != 1 or sum(archive["monthly"].values()) != archive["total_contributions"] or any(
+            type(count) is not int or count < 0 for count in archive["monthly"].values()):
+        raise ValueError("invalid historical GitHub aggregate")
+    result = copy.deepcopy(archive)
+    github_months = dict(archive["monthly"])
+    observations = []
+    ready = []
+    for data, validator, metric in ((recent, validate_github_snapshot, "contributions"),
+                                    (gitlab, validate_snapshot, "commits")):
+        if data is not None:
+            validator(data)
+        current = data.get("current_month") if data else None
+        ready.append(current is not None)
+        if data and data.get("observed_at"):
+            observed = datetime.fromisoformat(data["observed_at"].replace("Z", "+00:00"))
+            if observed > now + timedelta(seconds=30):
+                raise ValueError("activity observation is in the future")
+            observations.append(observed)
+    if recent is not None:
+        if datetime.fromisoformat(recent["start_date"]).date() <= datetime.fromisoformat(archive["observed_at"]).date():
+            raise ValueError("recent GitHub period overlaps the historical capture")
+        for month, count in source_months(recent, "contributions").items():
+            github_months[month] = github_months.get(month, 0) + count
+    gitlab_months = source_months(gitlab, "commits")
+    months = dict(github_months)
+    for month, count in gitlab_months.items():
+        months[month] = months.get(month, 0) + count
+    baseline_date = datetime.fromisoformat(archive["observed_at"]).replace(tzinfo=timezone.utc)
+    latest = max([baseline_date, *observations])
+    result["observed_at"] = latest.isoformat()
+    result["first_year"] = min(archive["first_year"], *(int(month[:4]) for month in months))
+    result["last_year"] = max(archive["last_year"], latest.year, *(int(month[:4]) for month in months))
+    result["monthly"] = dict(sorted(months.items()))
+    result["total_contributions"] = sum(months.values())
+    result["source_monthly"] = {"github": github_months, "gitlab": gitlab_months,
+                                "gitlab_merges": source_months(gitlab, "merge_commits")}
+    display_month = latest.strftime("%Y-%m")
+    result["source_ready"] = [ready[0] and display_month in github_months,
+                              ready[1] and display_month in gitlab_months]
+    result["source_observations"] = observations
+    result["activity_history"] = True
+    return result
+
+
+def activity_status(history: dict, now: datetime | None = None) -> str:
+    now = now or datetime.now(timezone.utc)
+    observations = history.get("source_observations", [])
+    if not observations:
+        return "AWAITING REFRESH"
+    observed = min(observations)
+    stale = now - observed > timedelta(hours=2) or now.strftime("%Y-%m") != observed.astimezone(timezone.utc).strftime("%Y-%m")
+    prefix = "STALE · AS OF " if stale else "AS OF "
+    status = prefix + observed.astimezone(timezone.utc).strftime("%d %b %Y %H:%M UTC").upper()
+    if not all(history.get("source_ready", [])):
+        status += " · SOURCE PENDING"
+    return status
+
+
+def render_stats(history: dict, mobile: bool, languages: dict | None = None, signal: dict | None = None) -> None:
+    w, h = ((420, 520) if mobile else (1000, 370)) if languages else \
+           ((420, 310) if mobile else (1000, 210))
+    if signal is not None:
+        from signal_snapshot import instant, validate_snapshot
+        validate_snapshot(signal)
+    def value(key):
+        return f'{signal[key]:,}' if signal is not None else "—"
+    streak = (value("streak_days") + "d" + ("+" if signal["streak_lower_bound"] else "")) if signal is not None else "—"
+    values = [(value("contributions"), "CONTRIBUTIONS / 30D"),
+              (value("pull_requests"), "PULL REQUESTS / 30D"),
+              (value("merged_prs"), "MERGED PRS / 30D"),
+              (streak, "STREAK")]
+    body = heading(w, "GIT SIGNAL", "01", mobile)
     for i, (value, label) in enumerate(values):
         cols = 2 if mobile else 4
         col, row = i % cols, i // cols
@@ -187,7 +267,8 @@ def render_stats(user: dict, mobile: bool, fetched_at: str | None = None,
         language_items = sorted(language_counts.items(), key=lambda item: (-item[1], item[0]))
         section_y = 300 if mobile else 206
         body += line(24, section_y - 20, w - 24, section_y - 20)
-        body += t(24, section_y, "TOP LANGUAGES", 13 if mobile else 16, CYAN, 700)
+        language_date = datetime.fromisoformat(languages["observed_at"]).strftime("%d %b %Y").upper()
+        body += t(24, section_y, "TOP LANGUAGES · " + language_date, 11 if mobile else 14, CYAN, 700)
         scope = f'{total} OWN REPOS · PRIVATE + PUBLIC · NO FORKS'
         body += t(24 if mobile else w - 24, section_y + (19 if mobile else 0), scope,
                   9 if mobile else 11, MUTED, 700, "start" if mobile else "end")
@@ -206,28 +287,17 @@ def render_stats(user: dict, mobile: bool, fetched_at: str | None = None,
             body += box(x, y - 10, 9, 9, color, "none", 1)
             body += t(x + 16, y, f'{name} {100 * count / total:.1f}%',
                       10 if mobile else 12, INK, 700)
-    foot_y = (493 if mobile else 342) if languages else (300 if mobile else 193)
+    foot_y = (493 if mobile else 342) if languages else (288 if mobile else 193)
     body += line(24, foot_y - 19, w - 24, foot_y - 19)
-    account_label = "GITHUB ACTIVITY"
-    if history:
-        account_label = f'LONGEST STREAK {history["longest_streak_days"]}D'
-        if not mobile:
-            account_label += f' · {user["repositories"]["totalCount"]} PUBLIC REPOS'
-    body += t(24, foot_y, account_label, 10 if mobile else 13, ORANGE, 700)
-    snapshot_date = (datetime.fromisoformat(fetched_at.replace("Z", "+00:00"))
-                     .strftime("%d %b %Y")) if fetched_at else "05 Oct 2026"
-    body += t(24, foot_y + 21,
-              f"Snapshot: {snapshot_date} · private activity included" if history else
-              f"Snapshot: {snapshot_date} · private activity may be included",
-              9 if mobile else 12, MUTED)
-    if mobile and history:
-        body += t(24, foot_y + 42, f'{user["repositories"]["totalCount"]} PUBLIC REPOS',
-                  9, MUTED, 700)
-    save("stats", svg(w, h, "GitHub activity snapshot", body), mobile)
+    status = activity_status({"source_observations": [instant(signal["observed_at"])], "source_ready": [True]}) if signal is not None else "SOURCE PENDING"
+    body += t(24, foot_y, status, 9 if mobile else 12, MUTED)
+    save("stats", svg(w, h, "Git Signal: GitHub contributions plus GitLab integration-branch commits, authored pull requests and merge requests opened or merged in the last 30 UTC calendar days, combined contribution streak, dated language figures and observation time", body), mobile)
 
 
 def render_history(history: dict, mobile: bool) -> None:
-    w, h = (420, 916) if mobile else (1000, 916)
+    extra_rows = max(0, history["last_year"] - 2026)
+    extra_decades = max(0, len({year // 10 for year in range(history["first_year"], history["last_year"] + 1)}) - 3)
+    w, h = (420, 916 + extra_rows * 21 + extra_decades * 55) if mobile else (1000, 916 + extra_rows * 23 + extra_decades * 59)
     months: dict[str, int] = history["monthly"]
     years = list(range(history["first_year"], history["last_year"] + 1))
     if history["schema_version"] != 1 or len(months) < 12 or any(
@@ -240,30 +310,23 @@ def render_history(history: dict, mobile: bool) -> None:
     current_year = history["last_year"]
     top_month, top_month_count = max(months.items(), key=lambda item: item[1])
     top_year, _ = max(annual.items(), key=lambda item: item[1])
-    body = ('''<style>
-.peak-cell { animation: peak-cell 5s ease-in-out infinite; }
-@keyframes peak-cell { 0%,100% { stroke-opacity: .4; } 50% { stroke-opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .peak-cell { animation: none; } }
-</style>''' +
-            heading(w, f'CONTRIBUTION ARCHIVE / {history["first_year"]}–{history["last_year"]}',
-                    "02", mobile))
+    body = heading(w, f'CONTRIBUTIONS / {history["first_year"]}–{history["last_year"]}',
+                   "02", mobile)
     body += t(24, 79, f'{history["total_contributions"]:,} CONTRIBUTIONS',
               15 if mobile else 19, ORANGE, 800)
-    body += t(w - 24, 79, "MONTH BY MONTH" if mobile else "MONTH BY MONTH · LIME = TOP 3",
+    body += t(w - 24, 79, "MONTH BY MONTH",
               10 if mobile else 13, MUTED, 700, "end")
-    groups = [("2000s", [y for y in years if y < 2010]),
-              ("2010s", [y for y in years if 2010 <= y < 2020]),
-              ("2020s", [y for y in years if y >= 2020])]
+    groups = [(f"{decade}s", [year for year in years if decade <= year < decade + 10])
+              for decade in sorted({year // 10 * 10 for year in years})]
     y = 107
     month_names = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
     left, step, cell_width = (58, 25, 22) if mobile else (105, 69, 62)
     row_step = 21 if mobile else 23
-    peak_keys = set(sorted(months, key=lambda key: months[key], reverse=True)[:3])
     for group_index, (group_name, group_years) in enumerate(groups):
         if not group_years:
             continue
-        color = (CYAN, VIOLET, PINK)[group_index]
+        color = (CYAN, VIOLET, PINK)[group_index % 3]
         body += t(24, y, group_name, 13 if mobile else 16, color, 800)
         body += t(w - 24, y, f'{sum(annual[year] for year in group_years):,}',
                   11 if mobile else 14, color, 700, "end")
@@ -289,10 +352,6 @@ def render_history(history: dict, mobile: bool) -> None:
                     body += box(x, cell_y, cell_width, 17 if mobile else 19,
                                 "none", ORANGE, 2,
                                 'class="month-focus" stroke-width="1.5"')
-                if key in peak_keys:
-                    body += box(x, cell_y, cell_width, 17 if mobile else 19,
-                                "none", LIME, 2,
-                                f'class="peak-cell" stroke-width="1.7" style="animation-delay:-{month % 3 * 1.4}s"')
                 if not mobile and count:
                     body += t(x + cell_width / 2, cell_y + 14, str(count), 9,
                               BASE if count >= 100 else INK, 700, "middle")
@@ -305,9 +364,7 @@ def render_history(history: dict, mobile: bool) -> None:
                     'class="metric-edge"')
         body += t(38, summary_y + 35, f'{annual[current_year]:,}', 30, ORANGE, 800)
         body += t(w - 38, summary_y + 27, f'{current_year} SO FAR', 12, INK, 700, "end")
-        body += t(w - 38, summary_y + 48,
-                  f'THROUGH {datetime.fromisoformat(history["observed_at"]).strftime("%d %b").upper()}',
-                  9, MUTED, 700, "end")
+
         lower_y = summary_y + 76
         for x, value, label, color in (
                 (24, f'{top_month_count:,}',
@@ -320,8 +377,7 @@ def render_history(history: dict, mobile: bool) -> None:
     else:
         card_width = (w - 72) / 3
         highlights = (
-            (f'{annual[current_year]:,}', f'{current_year} SO FAR · THROUGH '
-             f'{datetime.fromisoformat(history["observed_at"]).strftime("%d %b").upper()}', ORANGE),
+            (f'{annual[current_year]:,}', f'{current_year} SO FAR', ORANGE),
             (f'{top_month_count:,}',
              f'TOP MONTH · {datetime.strptime(top_month, "%Y-%m").strftime("%b %Y").upper()}', PINK),
             (str(top_year),
@@ -333,15 +389,13 @@ def render_history(history: dict, mobile: bool) -> None:
                         'class="metric-edge"' if index == 0 else "")
             body += t(x + 14, summary_y + 46, value, 34, color, 800)
             body += t(x + 14, summary_y + 73, label, 12, MUTED, 700)
-    body += line(24, h - (44 if mobile else 35), w - 24, h - (44 if mobile else 35))
-    body += t(24, h - (26 if mobile else 16),
-              f'* {history["last_year"]} through {datetime.fromisoformat(history["observed_at"]).strftime("%d %b")}; private activity included',
-              9 if mobile else 11, MUTED)
-    if mobile:
-        body += t(24, h - 11, "Cell = month · right = year · lime = top 3 months", 9, MUTED)
+    body += line(24, h - 35, w - 24, h - 35)
+    status = activity_status(history) if history.get("activity_history") else "AS OF " + datetime.fromisoformat(history["observed_at"]).strftime("%d %b %Y").upper()
+    body += t(24, h - 16, status, 9 if mobile else 11, MUTED)
     save("contributions", svg(
         w, h,
-        f'Monthly GitHub contributions from {history["first_year"]} to {history["last_year"]}, '
+        f'Monthly contributions from {history["first_year"]} to {history["last_year"]}: '
+        'preserved historical GitHub counts plus disjoint recent GitHub activity and GitLab commits, '
         'with current-year and record highlights', body), mobile)
 
 
@@ -418,7 +472,7 @@ def render_adsb(mobile: bool, data: dict | None = None) -> None:
                 body += t(x + 15, 240, detail_1, 11, MUTED)
                 body += t(x + 15, 259, detail_2, 11, MUTED)
         body += t(24 if mobile else 258, 585 if mobile else 310,
-                  "LOCAL RECEIVER · " + snapshot_label(data["observed_at"], timedelta(hours=2)),
+                  "LOCAL RECEIVER · " + snapshot_label(data["observed_at"], timedelta(hours=12)),
                   9 if mobile else 11, MUTED)
     else:
         body += t(24 if mobile else 258, 332 if mobile else 185,
@@ -486,7 +540,7 @@ def render_smon(mobile: bool, data: dict | None = None) -> None:
               10 if mobile else 14, MUTED, 700)
     if data:
         body += t(24, 403 if mobile else 297,
-                  f'CURRENT INSTANCE · {snapshot_label(data["generated_at"], timedelta(hours=2))}',
+                  f'CURRENT INSTANCE · {snapshot_label(data["generated_at"], timedelta(hours=24))}',
                   9 if mobile else 12, MUTED)
     save("smon", svg(w, h, "SMON operations and successful deployments since 2016", body), mobile)
 
@@ -560,22 +614,26 @@ def render_footer(mobile: bool) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, default=DATA)
     parser.add_argument("--smon-data", type=Path, default=SMON_DATA)
     parser.add_argument("--adsb-data", type=Path, default=ADSB_DATA)
     parser.add_argument("--history-data", type=Path, default=HISTORY_DATA)
     parser.add_argument("--languages-data", type=Path, default=LANGUAGES_DATA)
+    parser.add_argument("--gitlab-data", type=Path, default=GITLAB_DATA)
+    parser.add_argument("--github-recent-data", type=Path, default=GITHUB_RECENT_DATA)
     args = parser.parse_args()
-    github_data = json.loads(args.data.read_text(encoding="utf-8"))
-    user = github_data["data"]["user"]
     smon_data = json.loads(args.smon_data.read_text(encoding="utf-8")) if args.smon_data.is_file() else None
     adsb_data = json.loads(args.adsb_data.read_text(encoding="utf-8")) if args.adsb_data.is_file() else None
     history_data = json.loads(args.history_data.read_text(encoding="utf-8"))
     language_data = json.loads(args.languages_data.read_text(encoding="utf-8")) if args.languages_data.is_file() else None
+    gitlab_data = json.loads(args.gitlab_data.read_text(encoding="utf-8")) if args.gitlab_data.is_file() else empty_snapshot()
+    recent_github = json.loads(args.github_recent_data.read_text()) if args.github_recent_data.is_file() else empty_github_snapshot()
+    signal_path = ROOT / "tools/profile/data/git-signal.json"
+    signal = json.loads(signal_path.read_text()) if signal_path.is_file() else None
+    combined_history = merge_activity_history(history_data, recent_github, gitlab_data)
     for mobile in (False, True):
         render_header(mobile)
-        render_stats(user, mobile, github_data.get("fetched_at"), history_data, language_data)
-        render_history(history_data, mobile)
+        render_stats(combined_history, mobile, language_data, signal)
+        render_history(combined_history, mobile)
         render_smon(mobile, smon_data)
         render_adsb(mobile, adsb_data)
         render_adsb_links(mobile)

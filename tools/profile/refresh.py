@@ -14,6 +14,9 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from adsb_publish import NoRedirect, PROFILE_USER_AGENT
+from gitlab_snapshot import collect, empty_snapshot, load_config, validate_snapshot
+from github_snapshot import collect as collect_github, empty_snapshot as empty_github_snapshot
+from signal_snapshot import collect as collect_signal
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -106,10 +109,52 @@ def refresh_source(name: str, url: str | None, token: str | None, path: Path,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--render-only", action="store_true", help="render saved snapshots without network access")
+    parser.add_argument("--gitlab-config", type=Path, help="ignored local GitLab configuration; Actions uses environment variables")
     args = parser.parse_args()
     now = datetime.now(timezone.utc)
+    activity_failed = False
     if not args.render_only:
         print("GitHub: preserving dated contribution and language snapshots")
+        github_token = os.getenv("GITHUB_PROFILE_TOKEN") or os.getenv("GITHUB_ACTIVITY_TOKEN")
+        if github_token:
+            try:
+                recent_path = DATA_DIR / "github-recent.json"
+                previous_github = json.loads(recent_path.read_text()) if recent_path.is_file() else empty_github_snapshot()
+                archive = json.loads((DATA_DIR / "github-history.json").read_text())
+                recent = collect_github(github_token, os.getenv("GITHUB_PROFILE_LOGIN") or "davegudge",
+                                        previous_github, archive, now)
+                changed = write_if_changed(recent_path, recent)
+                print(f"GitHub: recent monthly aggregates {'updated' if changed else 'unchanged'}; archive preserved")
+            except Exception as error:
+                print(f"GitHub: recent refresh failed ({type(error).__name__}); preserving previous aggregate")
+                activity_failed = True
+        else:
+            print("GitHub: recent source not configured; preserving previous aggregate")
+        config = None
+        path = DATA_DIR / "gitlab-history.json"
+        try:
+            config = load_config(args.gitlab_config)
+            if config is None:
+                print("GitLab: not configured; preserving previous aggregate")
+            else:
+                previous = json.loads(path.read_text()) if path.is_file() else empty_snapshot(config["start_date"], config["timezone"])
+                validate_snapshot(previous)
+                changed = write_if_changed(path, collect(config, previous, now))
+                print(f"GitLab: monthly aggregates {'updated' if changed else 'unchanged'}; current month included")
+        except Exception as error:
+            # API errors may contain employer hostnames, messages and credentials.
+            print(f"GitLab: refresh failed ({type(error).__name__}); preserving previous archive")
+            activity_failed = True
+        if github_token and config is not None:
+            try:
+                signal = collect_signal(github_token, os.getenv("GITHUB_PROFILE_LOGIN") or "davegudge", config, now)
+                changed = write_if_changed(DATA_DIR / "git-signal.json", signal)
+                print(f"Git Signal: rolling aggregates {'updated' if changed else 'unchanged'}")
+            except Exception as error:
+                print(f"Git Signal: refresh failed ({type(error).__name__}); preserving previous aggregate")
+                activity_failed = True
+        else:
+            print("Git Signal: both sources required; preserving previous aggregate")
         print(refresh_source("SMON", os.getenv("SMON_PROFILE_STATS_URL"),
                              os.getenv("SMON_PROFILE_STATS_TOKEN"), DATA_DIR / "smon-latest.json",
                              validate_smon, now))
@@ -117,7 +162,7 @@ def main() -> int:
                              os.getenv("SMON_PROFILE_STATS_TOKEN"), DATA_DIR / "adsb-latest.json",
                              validate_adsb, now))
     subprocess.run([sys.executable, str(ROOT / "tools/profile/render.py")], check=True)
-    return 0
+    return 1 if activity_failed else 0
 
 
 if __name__ == "__main__":

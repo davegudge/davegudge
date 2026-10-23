@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 
 from adsb_snapshot import DEFAULT_JSON_DIR, DEFAULT_STATE_FILE, snapshot
 
-PROFILE_USER_AGENT = "profile-preview/1.0 (+https://github.com/davegudge/profile-preview)"
+PROFILE_USER_AGENT = "profile-refresh/1.0 (+https://github.com/davegudge/davegudge)"
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):

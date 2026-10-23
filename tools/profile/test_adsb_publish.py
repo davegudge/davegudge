@@ -33,7 +33,7 @@ class AdsbPublishTest(unittest.TestCase):
             publish("https://smon.example.test/api/profile_adsb", "secret",
                     {"aircraft_seen_last_60_seconds": 3})
         self.assertEqual("Bearer secret", opener.request.get_header("Authorization"))
-        self.assertTrue(opener.request.get_header("User-agent").startswith("profile-preview/1.0"))
+        self.assertTrue(opener.request.get_header("User-agent").startswith("profile-refresh/1.0"))
         self.assertEqual(b'{"aircraft_seen_last_60_seconds":3}', opener.request.data)
         self.assertEqual(15, opener.timeout)
 

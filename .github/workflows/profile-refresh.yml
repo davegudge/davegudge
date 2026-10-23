@@ -2,11 +2,27 @@ name: Refresh public profile
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/profile-refresh.yml'
+      - 'tools/profile/gitlab_snapshot.py'
+      - 'tools/profile/test_gitlab_snapshot.py'
+      - 'tools/profile/signal_snapshot.py'
+      - 'tools/profile/test_signal_snapshot.py'
+      - 'tools/profile/github_snapshot.py'
+      - 'tools/profile/test_github_snapshot.py'
+      - 'tools/profile/refresh.py'
+      - 'tools/profile/render.py'
   schedule:
     - cron: '17,47 * * * *'
 
 permissions:
   contents: write
+
+concurrency:
+  group: profile-refresh
+  cancel-in-progress: false
 
 jobs:
   refresh:
@@ -26,6 +42,17 @@ jobs:
           SMON_PROFILE_STATS_URL: ${{ vars.SMON_PROFILE_STATS_URL }}
           ADSB_PROFILE_STATS_URL: ${{ vars.ADSB_PROFILE_STATS_URL }}
           SMON_PROFILE_STATS_TOKEN: ${{ secrets.SMON_PROFILE_STATS_TOKEN }}
+          GITLAB_PROFILE_TOKEN: ${{ secrets.GITLAB_PROFILE_TOKEN }}
+          GITLAB_PROFILE_URL: ${{ vars.GITLAB_PROFILE_URL }}
+          GITLAB_PROFILE_USERNAME: ${{ vars.GITLAB_PROFILE_USERNAME }}
+          GITLAB_PROFILE_AUTHOR_EMAILS: ${{ vars.GITLAB_PROFILE_AUTHOR_EMAILS }}
+          GITLAB_PROFILE_PROJECT_IDS: ${{ vars.GITLAB_PROFILE_PROJECT_IDS }}
+          GITLAB_PROFILE_BRANCH: ${{ vars.GITLAB_PROFILE_BRANCH }}
+          GITLAB_PROFILE_START_DATE: ${{ vars.GITLAB_PROFILE_START_DATE }}
+          GITLAB_PROFILE_TIMEZONE: ${{ vars.GITLAB_PROFILE_TIMEZONE }}
+          GITHUB_ACTIVITY_TOKEN: ${{ github.token }}
+          GITHUB_PROFILE_TOKEN: ${{ secrets.GITHUB_PROFILE_TOKEN }}
+          GITHUB_PROFILE_LOGIN: ${{ github.repository_owner }}
         run: python3 tools/profile/refresh.py
       - name: Commit changed snapshots
         run: |
