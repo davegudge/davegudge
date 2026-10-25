@@ -1,8 +1,8 @@
 {
   "aircraft_seen_last_60_seconds": 138,
-  "aircraft_with_positions_last_60_seconds": 117,
-  "messages_last_15_minutes": 1133974,
-  "observed_at": "2026-10-25T14:20:00+00:00",
+  "aircraft_with_positions_last_60_seconds": 125,
+  "messages_last_15_minutes": 1323237,
+  "observed_at": "2026-10-25T17:50:00+00:00",
   "schema_version": 1,
   "source": "dump1090-fa"
 }
