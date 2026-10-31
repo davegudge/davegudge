@@ -6,7 +6,7 @@
   },
   "metric": "authored_commits_on_integration_branch",
   "monthly": {},
-  "observed_at": "2026-10-31T02:25:03.556490Z",
+  "observed_at": "2026-10-31T08:54:52.681050Z",
   "schema_version": 2,
   "source": "gitlab",
   "start_date": "2026-10-12",

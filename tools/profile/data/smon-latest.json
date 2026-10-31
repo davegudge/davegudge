@@ -1,8 +1,8 @@
 {
   "active_projects": 9,
-  "generated_at": "2026-10-31T02:25:16+00:00",
+  "generated_at": "2026-10-31T08:55:04+00:00",
   "instance": "current",
-  "monitoring_checks_last_24_hours": 25891,
+  "monitoring_checks_last_24_hours": 25882,
   "schema_version": 2,
   "services_healthy": 39,
   "services_monitored": 40,
