@@ -1,18 +1,25 @@
 {
   "current_month": {
-    "commits": 5,
-    "contributions": 291,
-    "month": "2026-10",
-    "pull_requests": 1,
-    "restricted_contributions": 285
+    "commits": 0,
+    "contributions": 0,
+    "month": "2026-11",
+    "pull_requests": 0,
+    "restricted_contributions": 0
   },
   "metric": "profile_contributions",
-  "monthly": {},
-  "observed_at": "2026-10-31T22:51:05Z",
+  "monthly": {
+    "2026-10": {
+      "commits": 5,
+      "contributions": 291,
+      "pull_requests": 1,
+      "restricted_contributions": 285
+    }
+  },
+  "observed_at": "2026-11-01T02:14:55Z",
   "schema_version": 1,
   "scope": "api_visible",
   "source": "github",
   "start_date": "2026-10-07",
-  "through_month": null,
+  "through_month": "2026-10",
   "timezone": "UTC"
 }

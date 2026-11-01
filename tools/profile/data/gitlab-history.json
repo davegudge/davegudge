@@ -1,15 +1,20 @@
 {
   "current_month": {
-    "commits": 42,
-    "merge_commits": 13,
-    "month": "2026-10"
+    "commits": 0,
+    "merge_commits": 0,
+    "month": "2026-11"
   },
   "metric": "authored_commits_on_integration_branch",
-  "monthly": {},
-  "observed_at": "2026-10-31T22:51:05.869300Z",
+  "monthly": {
+    "2026-10": {
+      "commits": 42,
+      "merge_commits": 13
+    }
+  },
+  "observed_at": "2026-11-01T02:14:55.111008Z",
   "schema_version": 2,
   "source": "gitlab",
   "start_date": "2026-10-12",
-  "through_month": null,
+  "through_month": "2026-10",
   "timezone": "Europe/London"
 }
