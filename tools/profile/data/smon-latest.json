@@ -1,11 +1,11 @@
 {
   "active_projects": 9,
-  "generated_at": "2026-11-19T18:41:26+00:00",
+  "generated_at": "2026-11-20T00:56:45+00:00",
   "instance": "current",
   "monitoring_checks_last_24_hours": 25917,
   "schema_version": 2,
   "services_healthy": 36,
   "services_monitored": 40,
-  "successful_deployments_last_30_days": 1,
+  "successful_deployments_last_30_days": 0,
   "successful_deployments_total": 96
 }
