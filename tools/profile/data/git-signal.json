@@ -1,11 +1,11 @@
 {
-  "contributions": 338,
-  "merged_prs": 53,
-  "observed_at": "2026-11-25T22:34:24Z",
-  "pull_requests": 55,
+  "contributions": 320,
+  "merged_prs": 51,
+  "observed_at": "2026-11-26T04:26:02Z",
+  "pull_requests": 53,
   "schema_version": 1,
   "streak_days": 3,
   "streak_lower_bound": false,
   "timezone": "UTC",
-  "window_start": "2026-10-27T00:00:00Z"
+  "window_start": "2026-10-28T00:00:00Z"
 }
