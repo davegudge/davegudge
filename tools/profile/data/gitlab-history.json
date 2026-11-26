@@ -1,7 +1,7 @@
 {
   "current_month": {
-    "commits": 86,
-    "merge_commits": 36,
+    "commits": 92,
+    "merge_commits": 41,
     "month": "2026-11"
   },
   "metric": "authored_commits_on_integration_branch",
@@ -11,7 +11,7 @@
       "merge_commits": 13
     }
   },
-  "observed_at": "2026-11-26T14:30:13.849209Z",
+  "observed_at": "2026-11-26T23:20:16.314077Z",
   "schema_version": 2,
   "source": "gitlab",
   "start_date": "2026-10-12",
